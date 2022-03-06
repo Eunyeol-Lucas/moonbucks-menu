@@ -13,3 +13,4 @@ export const MESSAGE = {
   ALREADY_EXISTS: "이미 동일한 메뉴가 있습니다.",
 };
 
+export const BASE_URL = "http://localhost:3000/api";

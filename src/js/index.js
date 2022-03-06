@@ -1,19 +1,23 @@
 import { isBlank, isReduplicated } from "./utils/validate.js";
 import { $ } from "./utils/dom.js";
-import { MESSAGE, CATEGORY } from "./const/index.js";
+import { MESSAGE, CATEGORY, BASE_URL } from "./const/index.js";
 import store from "./store/index.js";
 
 function App() {
   this.currentCategory = CATEGORY[Object.keys(CATEGORY)[0]];
   this.menu = {};
-  this.init = () => {
+  this.init = async () => {
     Object.values(CATEGORY).forEach((category) => (this.menu[category] = []));
-    if (store.getLocalStorage()) {
-      this.menu = store.getLocalStorage();
-    }
+    this.menu[this.currentCategory] = await getAllMenuByCategory(
+      this.currentCategory
+    );
     render();
     initEventListener();
   };
+
+  async function getAllMenuByCategory(category) {
+    return await (await fetch(`${BASE_URL}/category/${category}/menu`)).json();
+  }
   const menuItemTemplate = (item, idx) => {
     return `
     <li 
@@ -45,7 +49,7 @@ function App() {
 
   const render = () => {
     const template = this.menu[this.currentCategory]
-      .map((item, idx) => menuItemTemplate(item, idx))
+      ?.map((item, idx) => menuItemTemplate(item, idx))
       .join("");
     $("#menu-list").innerHTML = template;
     updateMenuCount();
@@ -57,7 +61,7 @@ function App() {
     } 개`;
   };
 
-  const addMenuName = () => {
+  const addMenuName = async () => {
     const newMenuName = $("#menu-name").value.trim();
     $("#menu-name").value = "";
     if (isBlank(newMenuName)) return;
@@ -66,8 +70,17 @@ function App() {
       name: newMenuName,
       soldOut: false,
     };
-    this.menu[this.currentCategory].push(newMenuObj);
-    store.setLocalStorage(this.menu);
+    await fetch(`${BASE_URL}/category/${this.currentCategory}/menu`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newMenuObj),
+    }).then((response) => response.json());
+
+    this.menu[this.currentCategory] = await getAllMenuByCategory(
+      this.currentCategory
+    );
     render();
   };
 
