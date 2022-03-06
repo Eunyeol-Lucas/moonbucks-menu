@@ -12,3 +12,4 @@ export const MESSAGE = {
   WARN_BLANK: "메뉴를 입력해주세요.",
   ALREADY_EXISTS: "이미 동일한 메뉴가 있습니다.",
 };
+
