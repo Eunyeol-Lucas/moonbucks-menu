@@ -3,21 +3,35 @@ import { $ } from "./utils/dom.js";
 import { MESSAGE, CATEGORY, BASE_URL } from "./const/index.js";
 import store from "./store/index.js";
 
+const MenuApi = {
+  async getAllMenuByCategory(category) {
+    return await (await fetch(`${BASE_URL}/category/${category}/menu`)).json();
+  },
+  async createMenu(category, name) {
+    const response = await fetch(`${BASE_URL}/category/${category}/menu`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) {
+      throw "에러가 발생했습니다.";
+    }
+  },
+};
 function App() {
   this.currentCategory = CATEGORY[Object.keys(CATEGORY)[0]];
   this.menu = {};
   this.init = async () => {
     Object.values(CATEGORY).forEach((category) => (this.menu[category] = []));
-    this.menu[this.currentCategory] = await getAllMenuByCategory(
+    this.menu[this.currentCategory] = await MenuApi.getAllMenuByCategory(
       this.currentCategory
     );
     render();
     initEventListener();
   };
 
-  async function getAllMenuByCategory(category) {
-    return await (await fetch(`${BASE_URL}/category/${category}/menu`)).json();
-  }
   const menuItemTemplate = (item, idx) => {
     return `
     <li 
@@ -66,19 +80,9 @@ function App() {
     $("#menu-name").value = "";
     if (isBlank(newMenuName)) return;
     if (isReduplicated(this.menu[this.currentCategory], newMenuName)) return;
-    const newMenuObj = {
-      name: newMenuName,
-      soldOut: false,
-    };
-    await fetch(`${BASE_URL}/category/${this.currentCategory}/menu`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newMenuObj),
-    }).then((response) => response.json());
 
-    this.menu[this.currentCategory] = await getAllMenuByCategory(
+    await MenuApi.createMenu(this.currentCategory, newMenuName);
+    this.menu[this.currentCategory] = await MenuApi.getAllMenuByCategory(
       this.currentCategory
     );
     render();
@@ -124,14 +128,20 @@ function App() {
     else if (classList.contains("menu-remove-button")) removeMenuName($li);
   };
 
-  const chooseCategory = ({ target }) => {
-    const isCategoryButton = target.classList.contains("cafe-category-name");
-    if (!isCategoryButton) return;
-    this.currentCategory = target.dataset.categoryName;
+  const changeMenuManagement = async (target) => {
     $("#category-title").textContent = `${target.textContent} 메뉴 관리 `;
     $("#menu-name").placeholder = `${target.textContent
       .trim()
       .slice(3)} 메뉴 이름`;
+    this.menu[this.currentCategory] = await MenuApi.getAllMenuByCategory(
+      this.currentCategory
+    );
+  };
+  const chooseCategory = async ({ target }) => {
+    const isCategoryButton = target.classList.contains("cafe-category-name");
+    if (!isCategoryButton) return;
+    this.currentCategory = target.dataset.categoryName;
+    await changeMenuManagement(target);
     render();
   };
   const initEventListener = () => {
