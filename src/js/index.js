@@ -1,7 +1,6 @@
 import { isBlank, isReduplicated } from "./utils/validate.js";
 import { $ } from "./utils/dom.js";
 import { MESSAGE, CATEGORY, BASE_URL } from "./const/index.js";
-import store from "./store/index.js";
 
 const MenuApi = {
   async getAllMenuByCategory(category) {
@@ -42,6 +41,20 @@ const MenuApi = {
       `${BASE_URL}/category/${category}/menu/${menuId}`,
       {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    if (!response.ok) {
+      alert("에러 발생");
+    }
+  },
+  async toggleSoldOut(category, menuId) {
+    const response = await fetch(
+      `${BASE_URL}/category/${category}/menu/${menuId}/soldout`,
+      {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -120,11 +133,12 @@ function App() {
     render();
   };
 
-  const soldOutMenu = ($li) => {
+  const soldOutMenu = async ($li) => {
     const menuId = $li.dataset.menuId;
-    let soldOut = this.menu[this.currentCategory][menuId].soldOut;
-    this.menu[this.currentCategory][menuId].soldOut = !soldOut;
-    store.setLocalStorage(this.menu);
+    await MenuApi.toggleSoldOut(this.currentCategory, menuId);
+    this.menu[this.currentCategory] = await MenuApi.getAllMenuByCategory(
+      this.currentCategory
+    );
     render();
   };
 
