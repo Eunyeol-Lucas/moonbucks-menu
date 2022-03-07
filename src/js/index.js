@@ -5,7 +5,10 @@ import store from "./store/index.js";
 
 const MenuApi = {
   async getAllMenuByCategory(category) {
-    return await (await fetch(`${BASE_URL}/category/${category}/menu`)).json();
+    const response = await (
+      await fetch(`${BASE_URL}/category/${category}/menu`)
+    ).json();
+    return response;
   },
   async createMenu(category, name) {
     const response = await fetch(`${BASE_URL}/category/${category}/menu`, {
@@ -17,6 +20,21 @@ const MenuApi = {
     });
     if (!response.ok) {
       throw "에러가 발생했습니다.";
+    }
+  },
+  async updateMenu(category, menuId, name) {
+    const response = await fetch(
+      `${BASE_URL}/category/${category}/menu/${menuId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      }
+    );
+    if (!response.ok) {
+      throw "에러가 발생했습니다";
     }
   },
 };
@@ -32,11 +50,11 @@ function App() {
     initEventListener();
   };
 
-  const menuItemTemplate = (item, idx) => {
+  const menuItemTemplate = (item) => {
     return `
     <li 
-      class="menu-list-item d-flex items-center py-2" data-menu-id=${idx}>
-      <span class="${item.soldOut ? "sold-out" : ""}  w-100 pl-2 menu-name">${
+      class="menu-list-item d-flex items-center py-2" data-menu-id=${item.id}>
+      <span class="${item.isSoldOut ? "sold-out" : ""}  w-100 pl-2 menu-name">${
       item.name
     }</span>
       <button
@@ -63,7 +81,7 @@ function App() {
 
   const render = () => {
     const template = this.menu[this.currentCategory]
-      ?.map((item, idx) => menuItemTemplate(item, idx))
+      ?.map((item) => menuItemTemplate(item))
       .join("");
     $("#menu-list").innerHTML = template;
     updateMenuCount();
@@ -96,7 +114,7 @@ function App() {
     render();
   };
 
-  const editMenuName = ($li) => {
+  const editMenuName = async ($li) => {
     const $menuName = $li.querySelector(".menu-name");
     let editedMenuName = prompt(MESSAGE.EDIT_MENU, $menuName.textContent);
     const menuId = $li.dataset.menuId;
@@ -106,8 +124,12 @@ function App() {
     if (isBlank(editedMenuName)) return;
     if (isReduplicated(this.menu[this.currentCategory], editedMenuName, menuId))
       return;
-    this.menu[this.currentCategory][menuId].name = editedMenuName;
-    store.setLocalStorage(this.menu);
+
+    await MenuApi.updateMenu(this.currentCategory, menuId, editedMenuName);
+    this.menu[this.currentCategory] = await MenuApi.getAllMenuByCategory(
+      this.currentCategory
+    );
+
     render();
   };
 

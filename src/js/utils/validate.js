@@ -5,8 +5,8 @@ export function isBlank(menuName) {
   return !menuName;
 }
 
-export function isReduplicated(arr, menuName, id = null) {
-  const reduplication = arr.find(
+export function isReduplicated(menuList, menuName, id = null) {
+  const reduplication = menuList.find(
     (item) => item.name === menuName && item.id !== parseInt(id)
   );
   if (reduplication) alert(MESSAGE.ALREADY_EXISTS);
